@@ -8,6 +8,7 @@
 /models/
 /model/
 /UniIR/
+/*.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
