@@ -6,9 +6,11 @@
 /data/
 /logs/
 /models/
+/dataset/
 /model/
 /UniIR/
 /*.sh
+/*.out
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
