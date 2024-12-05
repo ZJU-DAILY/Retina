@@ -11,6 +11,7 @@
 /UniIR/
 /*.sh
 /*.out
+/colpali_engine/utils/dataset_transformation.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
