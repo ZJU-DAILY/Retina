@@ -11,8 +11,7 @@
 /UniIR/
 /*.sh
 /*.out
-/colpali_engine/utils/dataset_transformation.py
-
+/llava-token-compression
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
