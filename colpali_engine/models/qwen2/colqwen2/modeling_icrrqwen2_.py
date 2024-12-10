@@ -1,7 +1,8 @@
 from typing import ClassVar, List, Optional
 from accelerate import Accelerator
 import torch
-from .mltc_moudle import MLTC
+from .mltc_moudle_local1 import MLTC
+from.mean_pool import MeanPool
 from torch import nn
 from transformers.models.qwen2_vl import Qwen2VLConfig, Qwen2VLForConditionalGeneration
 
@@ -14,6 +15,7 @@ class IcrrQwen2(Qwen2VLForConditionalGeneration):
         super().__init__(config=config)
         self.dim = 512
         self.custom_text_proj = MLTC(self.model.config.hidden_size, self.dim)
+        # self.custom_text_proj = MeanPool(self.model.config.hidden_size, self.dim)
         self.padding_side = "left"
         self.post_init()
 
@@ -121,15 +123,16 @@ class IcrrQwen2(Qwen2VLForConditionalGeneration):
                                   position_ids=position_ids,
                                   use_cache=False,
                                   output_hidden_states=True)  # (batch_size, sequence_length, hidden_size)
-
-        proj = self.custom_text_proj(last_hidden_states)  # (batch_size, sequence_length, dim)
+        attention_mask = example_mask if example_mask is not None else kwargs["attention_mask"]
+        proj = self.custom_text_proj(last_hidden_states,  attention_mask)  # (batch_size, sequence_length, dim)
 
         # L2 normalization
-        proj = proj / proj.norm(dim=-1, keepdim=True)  # (batch_size, sequence_length, dim)
-        if example_mask is not None:
-            proj = proj * example_mask.unsqueeze(-1)  # (batch_size, no_example_sequence_length, dim)
-        else:
-            proj = proj * kwargs["attention_mask"].unsqueeze(-1)  # (batch_size, sequence_length, dim)
+        # proj = proj / proj.
+        # # (batch_size, sequence_length, dim)
+        # if example_mask is not None:
+        #     proj = proj * example_mask.unsqueeze(-1)  # (batch_size, no_example_sequence_length, dim)
+        # else:
+        #     proj = proj * kwargs["attention_mask"].unsqueeze(-1)  # (batch_size, sequence_length, dim)
         
         return proj
 
