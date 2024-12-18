@@ -1,6 +1,7 @@
 import os
 from typing import List, Tuple, cast
-from .mbeir_dataset import MBEIRMainDataset, MBEIRInferenceOnlyDataset, MBEIRCandidatePoolDataset, Mode
+from .dataset import MBEIRMainDataset, MBEIRCandidatePoolDataset, Mode
+from .dataset import BEIRMainDataset, BEIRCandidatePoolDataset
 from datasets import Dataset, DatasetDict, concatenate_datasets, load_dataset
 
 USE_LOCAL_DATASET = os.environ.get("USE_LOCAL_DATASET", "1") == "1"
@@ -25,7 +26,7 @@ def load_train_set() -> DatasetDict:
     return ds_dict
 
 
-def load_icrr_train_set(        
+def load_mbeir_train_set(  
         mbeir_data_dir,  # Root directory of the MBEIR dataset
         query_instruct_path,  # Relate path to the query data
         train_query_data_path,  # Relate path to the candidate pool data
@@ -52,7 +53,7 @@ def load_icrr_train_set(
     return ds_dict
 
 
-def load_icrr_test_set(       
+def load_mbeir_test_set(       
         mbeir_data_dir,  
         query_instruct_path,  
         test_query_data_path,
@@ -70,6 +71,56 @@ def load_icrr_test_set(
                     mbeir_data_dir,
                     test_cand_pool_data_path)
     return test_dataset, candidatepool_dataset
+
+
+
+
+
+
+def load_beir_train_set(        
+        beir_data_dir,  # Root directory of the MBEIR dataset
+        train_qrels_data_path,  
+        dev_qrels_data_path,
+        query_data_path,
+        cand_pool_data_path,
+        ) -> DatasetDict: 
+    
+    train_dataset = BEIRMainDataset(        
+                    beir_data_dir,  
+                    train_qrels_data_path,
+                    query_data_path,
+                    cand_pool_data_path,
+                    mode=Mode.TRAIN)
+    val_dataset = BEIRMainDataset(
+                    beir_data_dir,
+                    dev_qrels_data_path,
+                    query_data_path,
+                    cand_pool_data_path,
+                    mode=Mode.EVAL)
+    ds_dict = DatasetDict({"train": train_dataset, "val": val_dataset})
+        
+    return ds_dict
+
+def load_beir_test_set(
+        beir_data_dir, 
+        test_qrels_data_path,  
+        query_data_path,
+        cand_pool_data_path,
+        ) -> DatasetDict:
+    
+    test_dataset = BEIRMainDataset(
+                    beir_data_dir, 
+                    test_qrels_data_path,
+                    query_data_path, 
+                    cand_pool_data_path,
+                    mode=Mode.TEST)
+    
+    candidatepool_dataset = BEIRCandidatePoolDataset(
+                    beir_data_dir,
+                    cand_pool_data_path)
+    return test_dataset, candidatepool_dataset
+
+
 
 
 def load_train_set_detailed() -> DatasetDict:
@@ -256,8 +307,8 @@ class TestSetFactory:
                  mbeir_data_dir = '',
                  test_query_data_path = '', 
                  test_cand_pool_data_path = ''):
-        self.test_query_data_path = os.path.join('query/test', test_query_data_path)
-        self.test_cand_pool_data_path = os.path.join('cand_pool/local', test_cand_pool_data_path)
+        self.test_query_data_path = os.path.join('query/test', test_query_data_path),
+        self.test_cand_pool_data_path = os.path.join('cand_pool/local', test_cand_pool_data_path),
         self.mbeir_data_dir = mbeir_data_dir
 
     def __call__(self, *args, **kwargs):
@@ -267,10 +318,31 @@ class TestSetFactory:
         #                              self.test_query_data_path,
         #                              self.test_cand_pool_data_path)
         
-        dataset = load_icrr_test_set(self.mbeir_data_dir, 
+        dataset = load_mbeir_test_set(self.mbeir_data_dir, 
                                 "instructions/query_instructions.tsv",
                                 self.test_query_data_path,
                                 self.test_cand_pool_data_path)
+        return dataset
+    
+class BeirTestSetFactory:
+    def __init__(self, 
+                 beir_data_dir = '',
+                 test_qrels_data_path = '',
+                 test_query_data_path = '', 
+                 test_cand_pool_data_path = ''):
+        
+        self.test_query_data_path,  = test_query_data_path,
+        self.test_qrels_data_path,  = test_qrels_data_path,
+        self.test_cand_pool_data_path,  = test_cand_pool_data_path,
+        self.beir_data_dir, = beir_data_dir,
+
+    def __call__(self, *args, **kwargs):
+        
+        dataset = load_beir_test_set(self.beir_data_dir, 
+                                self.test_qrels_data_path, 
+                                self.test_query_data_path, 
+                                self.test_cand_pool_data_path)
+        
         return dataset
 
 

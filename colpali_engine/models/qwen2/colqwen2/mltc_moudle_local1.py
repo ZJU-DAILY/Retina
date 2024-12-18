@@ -52,18 +52,24 @@ class MLTC(nn.Module):
     def forward(self, hidden_states, attention_mask = None):
         if torch.isnan(hidden_states).any():
             raise ValueError(f"NaN detected in hidden_states!")
-        # pool_out =self.q_pool(hidden_states.transpose(2, 1))
-        # pool_out = pool_out.transpose(1, 2)
-        # q = self.q_proj(pool_out)
+        pool_out =self.q_pool(hidden_states.transpose(2, 1))
+        pool_out = pool_out.transpose(1, 2)
+        q = self.q_proj(pool_out)
 
-        q = self.q_proj(hidden_states)
+        # q = self.q_proj(hidden_states)
         
         k = self.k_proj(hidden_states)  # Shape: [batch_size, seq_len, embed_dim]
         v = self.v_proj(hidden_states)  # Shape: [batch_size, seq_len, embed_dim]
+        
+        # k = self.k_proj(pool_out)  # Shape: [batch_size, seq_len, embed_dim]
+        # v = self.v_proj(pool_out)  # Shape: [batch_size, seq_len, embed_dim]
+        
         if attention_mask is not None:
             attention_mask = ~attention_mask.bool()  # Convert to bool type
 
         attn_output, attn_weights = self.clip_attn(q, k, v, key_padding_mask = attention_mask)  # Shape: [batch_size, seq_len, embed_dim]
+        
+        # attn_output, attn_weights = self.clip_attn(q, k, v)  # Shape: [batch_size, seq_len, embed_dim]
         output = self.mlp(attn_output)  # Shape: [batch_size, seq_len, output_dim]
         output = F.normalize(output, p=2, dim=-1)
         if torch.isnan(output).any():

@@ -12,6 +12,7 @@
 /*.sh
 /*.out
 /llava-token-compression
+/ColBERT
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

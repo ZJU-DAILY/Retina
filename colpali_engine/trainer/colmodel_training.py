@@ -66,8 +66,6 @@ class ColModelTrainingConfig:
 
         if self.pretrained_peft_model_name_or_path is not None:
             self.model.load_adapter(self.pretrained_peft_model_name_or_path)
-            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            self.model = self.model.to(device)
             print(f"Loaded pretrained adapter from {self.pretrained_peft_model_name_or_path}")
 
         if self.peft_config is not None:
@@ -86,7 +84,6 @@ class ColModelTrainingConfig:
                     self.model.print_trainable_parameters()
                 else:
                     print(f"Adapter already loaded from {self.pretrained_peft_model_name_or_path}. Not overwriting.")
-
     print_gpu_utilization()
 
 
@@ -139,6 +136,12 @@ class ColModelTraining:
         print_summary(result)
 
     def eval_dataset(self, test_dataset, candidatepool_dataset):
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if next(self.model.parameters()).is_cuda:
+            print("Model is already on GPU.")
+        else:
+            print("Model is not on GPU. Moving to:", device)
+            self.model = self.model.to(device)
         self.model.eval()
         
         # debug
@@ -237,7 +240,9 @@ class ColModelTraining:
 
     def save(self, config_file):
         # save model
-        self.model.save_pretrained(self.config.output_dir)
+        merged_model = self.model.merge_and_unload()
+        merged_model.save_pretrained(self.config.output_dir)
+        # self.model.base_model.save_pretrained(os.path.join(self.config.output_dir, "base_model"))
         if self.config.tokenizer is not None:
             self.config.tokenizer.save_pretrained(self.config.output_dir)
         if self.config.processor is not None:

@@ -1,1 +1,1 @@
-from .mbeir_dataset import (MBEIRDatasetBase, MBEIRMainDataset, MBEIRInferenceOnlyDataset, MBEIRCandidatePoolDataset)
+from .dataset import (MBEIRDatasetBase, MBEIRMainDataset, MBEIRCandidatePoolDataset, BEIRCandidatePoolDataset, BEIRMainDataset)
