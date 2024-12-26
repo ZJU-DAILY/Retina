@@ -8,3 +8,8 @@ from .late_interaction_losses import (
     ColbertPairwiseCELoss,
     ColbertPairwiseNegativeCELoss,
 )
+from .sparse_encoder_losses import (
+    SparseEncoderLoss,
+    SparsePairwiseCELoss,
+    SparsePairwiseNegativeCELoss,
+)

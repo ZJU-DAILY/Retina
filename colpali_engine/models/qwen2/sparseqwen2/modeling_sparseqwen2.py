@@ -1,20 +1,22 @@
 from typing import ClassVar, List, Optional
-
+from accelerate import Accelerator
 import torch
 from torch import nn
 from transformers.models.qwen2_vl import Qwen2VLConfig, Qwen2VLForConditionalGeneration
 
-
-class ColQwen2(Qwen2VLForConditionalGeneration):
+class SparseQwen2(Qwen2VLForConditionalGeneration):
 
     main_input_name: ClassVar[str] = "doc_input_ids"  # transformers-related
 
     def __init__(self, config: Qwen2VLConfig):
         super().__init__(config=config)
         self.dim = 128
-        self.custom_text_proj = nn.Linear(self.model.config.hidden_size, self.dim)
+        # self.custom_text_proj = MLTC(self.model.config.hidden_size, self.dim)
+        # self.custom_text_proj = MeanPool(self.model.config.hidden_size, self.dim)
+        # self.custom_text_proj = nn.Linear(self.model.config.hidden_size, self.dim)
         self.padding_side = "left"
         self.post_init()
+
 
     def inner_forward(
             self,
@@ -32,25 +34,6 @@ class ColQwen2(Qwen2VLForConditionalGeneration):
             image_grid_thw: Optional[torch.LongTensor] = None,
             video_grid_thw: Optional[torch.LongTensor] = None,
     ) -> torch.Tensor:
-
-        # if inputs_embeds is None:
-        #     inputs_embeds = self.model.embed_tokens(input_ids)
-        #     if pixel_values is not None:
-        #         pixel_values = pixel_values.type(self.visual.get_dtype())
-        #         image_embeds = self.visual(pixel_values, grid_thw=image_grid_thw)
-        #         image_mask = (input_ids == self.config.image_token_id).unsqueeze(-1).expand_as(inputs_embeds)
-        #         image_embeds = image_embeds.to(inputs_embeds.device, inputs_embeds.dtype)
-        #         inputs_embeds = inputs_embeds.masked_scatter(image_mask, image_embeds)
-
-        #     if pixel_values_videos is not None:
-        #         pixel_values_videos = pixel_values_videos.type(self.visual.get_dtype())
-        #         video_embeds = self.visual(pixel_values_videos, grid_thw=video_grid_thw)
-        #         video_mask = (input_ids == self.config.video_token_id).unsqueeze(-1).expand_as(inputs_embeds)
-        #         video_embeds = video_embeds.to(inputs_embeds.device, inputs_embeds.dtype)
-        #         inputs_embeds = inputs_embeds.masked_scatter(video_mask, video_embeds)
-
-        #     if attention_mask is not None:
-        #         attention_mask = attention_mask.to(inputs_embeds.device)
 
         if inputs_embeds is None:
             inputs_embeds = self.model.embed_tokens(input_ids)
@@ -104,16 +87,13 @@ class ColQwen2(Qwen2VLForConditionalGeneration):
         hidden_states = outputs[0]
         return hidden_states
 
-
-
     def forward(self, *args, **kwargs) -> torch.Tensor:
         # Delete output_hidden_states from kwargs
         kwargs.pop("output_hidden_states", None)
-        
+        example_mask = kwargs.pop("example_mask", None)
 
         # The following code is a hack to make sure the scatter in DDP is done correctly when training on multiple GPUs
         if "pixel_values" in kwargs:
-            # compute pixel_values offsets
             images_sublist_length = kwargs.pop("images_sublist_length", None)
             if images_sublist_length is None:
                 raise ValueError("images_sublist_length should be provided when pixel_values is provided.")
@@ -141,12 +121,28 @@ class ColQwen2(Qwen2VLForConditionalGeneration):
                                   position_ids=position_ids,
                                   use_cache=False,
                                   output_hidden_states=True)  # (batch_size, sequence_length, hidden_size)
+        
+        # attention_mask = example_mask if example_mask is not None else kwargs["attention_mask"]
+        # proj = self.custom_text_proj(last_hidden_states,  attention_mask)  # (batch_size, sequence_length, dim)
 
-        proj = self.custom_text_proj(last_hidden_states)  # (batch_size, sequence_length, dim)
-
+        # proj = self.custom_text_proj(last_hidden_states)
+        proj  = self.lm_head(last_hidden_states)
+        
+        proj = torch.max(torch.log(1 + torch.relu(proj)) * kwargs["attention_mask"].unsqueeze(-1), dim=1).values
+        # proj  = self.lm_head(last_hidden_states)
+        # proj = torch.relu(proj)
+        # proj = torch.log1p(proj)
+        # proj = proj * kwargs["attention_mask"].unsqueeze(-1)
+        # proj, _ = torch.max(proj, dim=1)
+        
         # L2 normalization
-        proj = proj / proj.norm(dim=-1, keepdim=True)  # (batch_size, sequence_length, dim)
-        proj = proj * kwargs["attention_mask"].unsqueeze(-1)  # (batch_size, sequence_length, dim)
+        # proj = proj / proj.norm(dim=-1, keepdim=True)  # (batch_size, sequence_length, dim)
+        # # (batch_size, sequence_length, dim)
+        # if example_mask is not None:
+        #     proj = proj * example_mask.unsqueeze(-1)  # (batch_size, no_example_sequence_length, dim)
+        # else:
+        #     proj = proj * kwargs["attention_mask"].unsqueeze(-1)  # (batch_size, sequence_length, dim)
+        
         return proj
 
     @property

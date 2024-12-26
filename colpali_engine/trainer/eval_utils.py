@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict
-
+from typing import Dict, List
+import torch
 import numpy as np
+from tqdm import tqdm
 import pytrec_eval
 from mteb.evaluation.evaluators.RetrievalEvaluator import RetrievalEvaluator
 from mteb.evaluation.evaluators.utils import (
@@ -18,7 +19,23 @@ from mteb.evaluation.evaluators.utils import (
 
 logger = logging.getLogger(__name__)
 
-
+def score_processing(scores: torch.Tensor, 
+                              qsidx_2_query: List[str], 
+                              docidx_2_docid: Dict[str, str], 
+                              threshold: float = 0) -> Dict[str, Dict[str, float]]:
+    assert scores.shape[0] == len(qsidx_2_query), "Number of queries does not match the number of query ids"
+    n_docs = scores.shape[1]
+    docid_list = [docidx_2_docid[str(i)] for i in range(n_docs)]
+    docid_array = np.array(docid_list)
+    results = {}
+    for idx in tqdm(range(scores.shape[0]), desc="score_processing...", unit="query"):
+        scores_per_query = scores[idx]
+        mask = scores_per_query > threshold
+        filtered_docidx = torch.nonzero(mask, as_tuple=True)[0].cpu().numpy()
+        filtered_scores = scores_per_query[mask].cpu().numpy()
+        filtered_docids = docid_array[filtered_docidx]
+        results[qsidx_2_query[idx]] = dict(zip(filtered_docids, filtered_scores.astype(float)))
+    return results
 
 class CustomRetrievalEvaluator:
     """

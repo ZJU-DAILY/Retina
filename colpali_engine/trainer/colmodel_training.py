@@ -8,6 +8,7 @@ from datasets import concatenate_datasets, Dataset
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
+import time
 from transformers import (
     AutoTokenizer,
     PreTrainedModel,
@@ -20,7 +21,7 @@ from colpali_engine.loss.late_interaction_losses import (
     ColbertLoss,
 )
 from colpali_engine.trainer.contrastive_trainer import ContrastiveTrainer
-from colpali_engine.trainer.eval_utils import CustomRetrievalEvaluator
+from colpali_engine.trainer.eval_utils import CustomRetrievalEvaluator, score_processing
 from colpali_engine.utils.gpu_stats import print_gpu_utilization, print_summary
 from colpali_engine.utils.processing_utils import BaseVisualRetrieverProcessor
 
@@ -136,12 +137,12 @@ class ColModelTraining:
         print_summary(result)
 
     def eval_dataset(self, test_dataset, candidatepool_dataset):
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         if next(self.model.parameters()).is_cuda:
             print("Model is already on GPU.")
         else:
-            print("Model is not on GPU. Moving to:", device)
             self.model = self.model.to(device)
+            print("Model is not on GPU. Moving to:", device)
         self.model.eval()
         
         # debug
@@ -174,35 +175,47 @@ class ColModelTraining:
         for idx, sample in enumerate(candidatepool_dataset):
             doc_id = str(sample["p_did"])
             docidx_2_docid[str(idx)] = doc_id
+        
+        if os.path.exists(f"{self.config.output_dir}/qs.pt") and os.path.exists(f"{self.config.output_dir}/ps.pt"):
+            qs = torch.load(f"{self.config.output_dir}/qs.pt", weights_only=True)
+            ps = torch.load(f"{self.config.output_dir}/ps.pt", weights_only=True)
+            # ps = torch.load(f"{self.config.output_dir}/qs.pt", weights_only=True)
             
-        qs = []
-        ps = []
+            print("Embeddings already computed, loading")
+        else:
+            qs = []
+            ps = []
+            device = self.model.device
+            with torch.no_grad():
+                for dataloader in [dataloader_with_query, dataloader_without_query]:
+                    for batch in tqdm(dataloader):
+                        if "query_input_ids" in batch:
+                            query = self.model(**{k[6:]: v.to(device) for k, v in batch.items() if k.startswith("query")})
+                            qs.extend(list(torch.unbind(query.to("cpu"))))
+                        else:
+                            doc = self.model(**{k[4:]: v.to(device) for k, v in batch.items() if k.startswith("doc")})
+                            ps.extend(list(torch.unbind(doc.to("cpu"))))
 
-        device = self.model.device
-        with torch.no_grad():
-            for dataloader in [dataloader_with_query, dataloader_without_query]:
-                for batch in tqdm(dataloader):
-                    if "query_input_ids" in batch:
-                        query = self.model(**{k[6:]: v.to(device) for k, v in batch.items() if k.startswith("query")})
-                        qs.extend(list(torch.unbind(query.to("cpu"))))
-                    else:
-                        doc = self.model(**{k[4:]: v.to(device) for k, v in batch.items() if k.startswith("doc")})
-                        ps.extend(list(torch.unbind(doc.to("cpu"))))
-
-        print("Embeddings computed, evaluating")
+            print("Embeddings computed, evaluating")
+            #save embeddings
+            torch.save(qs, f"{self.config.output_dir}/qs.pt")
+            torch.save(ps, f"{self.config.output_dir}/ps.pt")
+        
         scores = self.config.processor.score(qs, ps, device=self.model.device)
-        # scores is 2d array of shape (n_queries, n_docs)
-        # turn it into a dict
-        results = {}
-        assert scores.shape[0] == len(qsidx_2_query)
-        for idx, scores_per_query in enumerate(scores):
-            results[qsidx_2_query[idx]] = {
-                docidx_2_docid[str(docidx)]: float(score) for docidx, score in enumerate(scores_per_query)
-            }
-
+        # results = {}
+        # assert scores.shape[0] == len(qsidx_2_query)
+        # for idx, scores_per_query in enumerate(scores):
+        #     results[qsidx_2_query[idx]] = {
+        #         docidx_2_docid[str(docidx)]: float(score) for docidx, score in enumerate(scores_per_query)
+        #     }
+        results = score_processing(scores, qsidx_2_query, docidx_2_docid)
         # evaluate
         metrics = self.retrieval_evaluator.compute_mteb_metrics(relevant_docs, results)
         print("MTEB metrics:", metrics)
+        
+        # delete embeddings
+        os.remove(f"{self.config.output_dir}/qs.pt")
+        os.remove(f"{self.config.output_dir}/ps.pt")
 
         return metrics
 
@@ -216,8 +229,8 @@ class ColModelTraining:
         #     all_metrics["validation_set"] = metrics
         # except Exception as e:
         #     print(f"Error evaluating validation set: {e}")
-
         # switching to normal collator
+        
         self.collator = VisualRetrieverCollator(
             processor=self.config.processor,
             max_length=self.config.max_length,
@@ -231,11 +244,11 @@ class ColModelTraining:
                 print(f"\nMetrics for {test_name}: {metrics}")
 
                 # checkpoint dumps
-                with open(f"{self.config.output_dir}/results_use_example_{self.config.use_example}.json", "w") as f:
+                with open(f"{self.config.output_dir}/results_use_example_{self.config.use_example}.json", "a") as f:
                     json.dump(all_metrics, f)
-
+                    
         # save results as json
-        with open(f"{self.config.output_dir}/results_use_example_{self.config.use_example}.json", "w") as f:
+        with open(f"{self.config.output_dir}/results_use_example_{self.config.use_example}.json", "a") as f:
             json.dump(all_metrics, f)
 
     def save(self, config_file):

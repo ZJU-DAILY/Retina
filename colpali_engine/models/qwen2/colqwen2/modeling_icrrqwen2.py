@@ -13,10 +13,10 @@ class IcrrQwen2(Qwen2VLForConditionalGeneration):
 
     def __init__(self, config: Qwen2VLConfig):
         super().__init__(config=config)
-        self.dim = 512
+        self.dim = 128
         # self.custom_text_proj = MLTC(self.model.config.hidden_size, self.dim)
-        # self.custom_text_proj = MeanPool(self.model.config.hidden_size, self.dim)
-        self.custom_text_proj = nn.Linear(self.model.config.hidden_size, self.dim)
+        self.custom_text_proj = MeanPool(self.model.config.hidden_size, self.dim)
+        # self.custom_text_proj = nn.Linear(self.model.config.hidden_size, self.dim)
         self.padding_side = "left"
         self.post_init()
 
@@ -125,18 +125,18 @@ class IcrrQwen2(Qwen2VLForConditionalGeneration):
                                   use_cache=False,
                                   output_hidden_states=True)  # (batch_size, sequence_length, hidden_size)
         
-        # attention_mask = example_mask if example_mask is not None else kwargs["attention_mask"]
-        # proj = self.custom_text_proj(last_hidden_states,  attention_mask)  # (batch_size, sequence_length, dim)
+        attention_mask = example_mask if example_mask is not None else kwargs["attention_mask"]
+        proj = self.custom_text_proj(last_hidden_states,  attention_mask)  # (batch_size, sequence_length, dim)
 
+        # proj = self.custom_text_proj(last_hidden_states)
 
-        proj = self.custom_text_proj(last_hidden_states)
         # L2 normalization
-        proj = proj / proj.norm(dim=-1, keepdim=True)  # (batch_size, sequence_length, dim)
-        # (batch_size, sequence_length, dim)
-        if example_mask is not None:
-            proj = proj * example_mask.unsqueeze(-1)  # (batch_size, no_example_sequence_length, dim)
-        else:
-            proj = proj * kwargs["attention_mask"].unsqueeze(-1)  # (batch_size, sequence_length, dim)
+        # proj = proj / proj.norm(dim=-1, keepdim=True)  # (batch_size, sequence_length, dim)
+        # # (batch_size, sequence_length, dim)
+        # if example_mask is not None:
+        #     proj = proj * example_mask.unsqueeze(-1)  # (batch_size, no_example_sequence_length, dim)
+        # else:
+        #     proj = proj * kwargs["attention_mask"].unsqueeze(-1)  # (batch_size, sequence_length, dim)
         
         return proj
 

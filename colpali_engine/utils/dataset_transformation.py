@@ -307,8 +307,8 @@ class TestSetFactory:
                  mbeir_data_dir = '',
                  test_query_data_path = '', 
                  test_cand_pool_data_path = ''):
-        self.test_query_data_path = os.path.join('query/test', test_query_data_path),
-        self.test_cand_pool_data_path = os.path.join('cand_pool/local', test_cand_pool_data_path),
+        self.test_query_data_path, = os.path.join('query/test', test_query_data_path),
+        self.test_cand_pool_data_path,  = os.path.join('cand_pool/local', test_cand_pool_data_path),
         self.mbeir_data_dir = mbeir_data_dir
 
     def __call__(self, *args, **kwargs):

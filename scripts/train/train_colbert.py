@@ -45,9 +45,9 @@ if __name__ == "__main__":
     # typer.run(main)
     # config_file = './scripts/configs/qwen2/train_biqwen2_hardneg_model.yaml'
     # config_file = './scripts/configs/qwen2/train_icrr_colqwen2_model.yaml'
-    config_file = './scripts/configs/qwen2/train_beir_colqwen2_model.yaml'
+    config_file = './scripts/configs/qwen2/train_beir_sparse_qwen2_model.yaml'
     # config_file = './scripts/configs/qwen2/train_icrr_colqwen2_example_model.yaml'
-    
+    # config_file = './scripts/configs/qwen2/train_icrr_biqwen2_model.yaml'
     # config_file = '/data1/zhh/baselines/mm/icrr/scripts/configs/qwen2/train_icrr_biqwen2_model.yaml'
     main(config_file)
     
