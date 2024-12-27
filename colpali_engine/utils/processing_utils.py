@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 import torch
+import gc
 from PIL import Image
 from tqdm import tqdm
 from transformers import BatchEncoding, BatchFeature
@@ -165,7 +166,7 @@ class BaseVisualRetrieverProcessor(ABC):
             raise ValueError("No queries provided")
         if len(ps) == 0:
             raise ValueError("No passages provided")
-
+        ps_len = len(ps)
         # 初始化 Numba typed.Dict
         inverted_index_ids = Dict.empty(
             key_type=types.int32,
@@ -175,7 +176,7 @@ class BaseVisualRetrieverProcessor(ABC):
             key_type=types.int32,
             value_type=types.ListType(types.float32),
         )
-        for doc_id, p in tqdm(enumerate(ps), desc="Building Inverted Index", total=len(ps)):
+        for doc_id, p in tqdm(enumerate(ps), desc="Building Inverted Index", total=ps_len):
             p = p.to(device)
             indices = p.nonzero(as_tuple=True)[0].tolist()
             values = p[indices].tolist()
@@ -189,7 +190,8 @@ class BaseVisualRetrieverProcessor(ABC):
                         inverted_index_floats[term] = NumbaList.empty_list(types.float32)
                     inverted_index_ids[term].append(doc_id_int)
                     inverted_index_floats[term].append(value_float)
-
+        del ps
+        gc.collect()
         scores_list = []
 
         for start_idx in tqdm(range(0, len(qs), batch_size), desc="Processing Queries and Compute Score.....", unit="batch"):
@@ -215,9 +217,9 @@ class BaseVisualRetrieverProcessor(ABC):
                     q_terms_np,
                     q_values_np,
                     threshold=threshold, 
-                    size_collection=len(ps)
+                    size_collection=ps_len
                 )
-                score_tensor = torch.zeros(len(ps), dtype=torch.float32)
+                score_tensor = torch.zeros(ps_len, dtype=torch.float32)
                 score_tensor[filtered_indexes] = torch.from_numpy(scores)
                 batch_scores.append(score_tensor)
 

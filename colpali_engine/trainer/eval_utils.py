@@ -19,6 +19,7 @@ from mteb.evaluation.evaluators.utils import (
 
 logger = logging.getLogger(__name__)
 
+#TODO: 减少result中的条目，加快评估速度
 def score_processing(scores: torch.Tensor, 
                               qsidx_2_query: List[str], 
                               docidx_2_docid: Dict[str, str], 
