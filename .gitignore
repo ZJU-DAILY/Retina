@@ -8,6 +8,7 @@
 /models/
 /dataset/
 /model/
+*/*@
 /UniIR/
 /*.sh
 /*.out
