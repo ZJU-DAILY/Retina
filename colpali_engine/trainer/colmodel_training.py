@@ -214,8 +214,8 @@ class ColModelTraining:
         print("MTEB metrics:", metrics)
         
         # delete embeddings
-        os.remove(f"{self.config.output_dir}/qs.pt")
-        os.remove(f"{self.config.output_dir}/ps.pt")
+        # os.remove(f"{self.config.output_dir}/qs.pt")
+        # os.remove(f"{self.config.output_dir}/ps.pt")
 
         return metrics
 
