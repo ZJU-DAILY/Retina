@@ -202,20 +202,21 @@ class ColModelTraining:
             torch.save(ps, f"{self.config.output_dir}/ps.pt")
         
         scores = self.config.processor.score(qs, ps, device=self.model.device)
-        # results = {}
-        # assert scores.shape[0] == len(qsidx_2_query)
-        # for idx, scores_per_query in enumerate(scores):
-        #     results[qsidx_2_query[idx]] = {
-        #         docidx_2_docid[str(docidx)]: float(score) for docidx, score in enumerate(scores_per_query)
-        #     }
-        results = score_processing(scores, qsidx_2_query, docidx_2_docid)
+        results = {}
+        assert scores.shape[0] == len(qsidx_2_query)
+        for idx, scores_per_query in enumerate(scores):
+            results[qsidx_2_query[idx]] = {
+                docidx_2_docid[str(docidx)]: float(score) for docidx, score in enumerate(scores_per_query)
+            }
+        # results = score_processing(scores, qsidx_2_query, docidx_2_docid)
+        del scores
         # evaluate
         metrics = self.retrieval_evaluator.compute_mteb_metrics(relevant_docs, results)
         print("MTEB metrics:", metrics)
         
         # delete embeddings
-        # os.remove(f"{self.config.output_dir}/qs.pt")
-        # os.remove(f"{self.config.output_dir}/ps.pt")
+        os.remove(f"{self.config.output_dir}/qs.pt")
+        os.remove(f"{self.config.output_dir}/ps.pt")
 
         return metrics
 
