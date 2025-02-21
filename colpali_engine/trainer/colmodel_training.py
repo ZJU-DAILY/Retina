@@ -9,6 +9,7 @@ from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 import time
+from datetime import datetime
 from transformers import (
     AutoTokenizer,
     PreTrainedModel,
@@ -93,7 +94,7 @@ class ColModelTraining:
         self.config = config
         self.model = self.config.model
 
-        self.dataset =self.config.dataset_loading_func
+        self.dataset =self.config.dataset_loading_func()
 
         if isinstance(self.dataset, Tuple):
             corpus_format = self.dataset[2]
@@ -124,7 +125,7 @@ class ColModelTraining:
         trainer = ContrastiveTrainer(
             model=self.model,
             train_dataset=self.dataset["train"],
-            eval_dataset=self.dataset["val"],
+            eval_dataset=self.dataset["eval"],
             args=self.config.tr_args,
             data_collator=self.collator,
             loss_func=self.config.loss_func,
@@ -136,7 +137,7 @@ class ColModelTraining:
         result = trainer.train(resume_from_checkpoint=self.config.tr_args.resume_from_checkpoint)
         print_summary(result)
 
-    def eval_dataset(self, test_dataset, candidatepool_dataset):
+    def eval_dataset(self, test_name, test_dataset, candidatepool_dataset):
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         if next(self.model.parameters()).is_cuda:
             print("Model is already on GPU.")
@@ -146,8 +147,8 @@ class ColModelTraining:
         self.model.eval()
         
         # debug
-        # test_dataset = Subset(test_dataset, range(150))
-        # candidatepool_dataset = Subset(candidatepool_dataset, range(250))
+        # test_dataset = Subset(test_dataset, range(2000))
+        # candidatepool_dataset = Subset(candidatepool_dataset, range(2000))
         # debug
         
         dataloader_with_query = DataLoader(
@@ -176,9 +177,9 @@ class ColModelTraining:
             doc_id = str(sample["p_did"])
             docidx_2_docid[str(idx)] = doc_id
         
-        if os.path.exists(f"{self.config.output_dir}/qs.pt") and os.path.exists(f"{self.config.output_dir}/ps.pt"):
-            qs = torch.load(f"{self.config.output_dir}/qs.pt", weights_only=True)
-            ps = torch.load(f"{self.config.output_dir}/ps.pt", weights_only=True)
+        if os.path.exists(f"{self.config.output_dir}/{test_name}_qs.pt") and os.path.exists(f"{self.config.output_dir}/{test_name}_ps.pt"):
+            qs = torch.load(f"{self.config.output_dir}/{test_name}_qs.pt", weights_only=True)
+            ps = torch.load(f"{self.config.output_dir}/{test_name}_ps.pt", weights_only=True)
             # ps = torch.load(f"{self.config.output_dir}/qs.pt", weights_only=True)
             
             print("Embeddings already computed, loading")
@@ -191,23 +192,42 @@ class ColModelTraining:
                     for batch in tqdm(dataloader):
                         if "query_input_ids" in batch:
                             query = self.model(**{k[6:]: v.to(device) for k, v in batch.items() if k.startswith("query")})
-                            qs.extend(list(torch.unbind(query.to("cpu"))))
+                            #test
+                            
+                            # query_index_inbatch = 3
+                            # query_input_token_ids = torch.tensor([v.to(device) for k, v in batch.items() if k == "query_input_ids"][0][query_index_inbatch])
+                            # decoded_text_origin = self.config.processor.decode(query_input_token_ids)
+                            
+                            # embed_query_nonzero = torch.flatten(torch.nonzero(query[query_index_inbatch]))
+                            # decoded_text_embed = self.config.processor.decode(embed_query_nonzero)
+                            
+                            # print(f"index: {query_index_inbatch}\n origin: {decoded_text_origin}\n\n embed: {decoded_text_embed}")
+                            
+                            #test
+                            query_sparse = query.to_sparse()
+                            qs.extend(list(torch.unbind(query_sparse.to("cpu"))))
                         else:
                             doc = self.model(**{k[4:]: v.to(device) for k, v in batch.items() if k.startswith("doc")})
-                            ps.extend(list(torch.unbind(doc.to("cpu"))))
+                            doc_sparse = doc.to_sparse()
+                            ps.extend(list(torch.unbind(doc_sparse.to("cpu"))))
+                            # ps.extend(list(torch.unbind(doc.to("cpu"))))
 
             print("Embeddings computed, evaluating")
             #save embeddings
-            torch.save(qs, f"{self.config.output_dir}/qs.pt")
-            torch.save(ps, f"{self.config.output_dir}/ps.pt")
+            torch.save(qs, f"{self.config.output_dir}/{test_name}_qs.pt")
+            torch.save(ps, f"{self.config.output_dir}/{test_name}_ps.pt")
         
         scores = self.config.processor.score(qs, ps, device=self.model.device)
         results = {}
         assert scores.shape[0] == len(qsidx_2_query)
         for idx, scores_per_query in enumerate(scores):
-            results[qsidx_2_query[idx]] = {
-                docidx_2_docid[str(docidx)]: float(score) for docidx, score in enumerate(scores_per_query)
-            }
+            # results[qsidx_2_query[idx]] = {
+            #     docidx_2_docid[str(docidx)]: float(score) for docidx, score in enumerate(scores_per_query)
+            # }
+            query_id = qsidx_2_query[idx]
+            doc_scores = [(docidx_2_docid[str(docidx)], float(score)) for docidx, score in enumerate(scores_per_query)]
+            top_docs = sorted(doc_scores, key=lambda x: x[1], reverse=True)[:1000]
+            results[query_id] = {doc_id: score for doc_id, score in top_docs}
         # results = score_processing(scores, qsidx_2_query, docidx_2_docid)
         del scores
         # evaluate
@@ -215,8 +235,8 @@ class ColModelTraining:
         print("MTEB metrics:", metrics)
         
         # delete embeddings
-        os.remove(f"{self.config.output_dir}/qs.pt")
-        os.remove(f"{self.config.output_dir}/ps.pt")
+        # os.remove(f"{self.config.output_dir}/{test_name}_qs.pt")
+        # os.remove(f"{self.config.output_dir}/{test_name}_ps.pt")
 
         return metrics
 
@@ -240,22 +260,27 @@ class ColModelTraining:
             for test_name, test_dataset_loading_func in self.config.eval_dataset_loader.items():
                 print(f"\nEvaluating {test_name}")
                 test_ds, cand_ds = test_dataset_loading_func()
-                metrics = self.eval_dataset(test_ds, cand_ds)
+                metrics = self.eval_dataset(test_name, test_ds, cand_ds)
                 all_metrics[test_name] = metrics
                 print(f"\nMetrics for {test_name}: {metrics}")
 
                 # checkpoint dumps
                 with open(f"{self.config.output_dir}/results_use_example_{self.config.use_example}.json", "a") as f:
                     json.dump(all_metrics, f)
+                    f.write("\n")
+                    current_time = datetime.now().strftime("%Y-%m-%d-%H")
+                    json.dump({"timestamp": current_time}, f)
                     
         # save results as json
         with open(f"{self.config.output_dir}/results_use_example_{self.config.use_example}.json", "a") as f:
             json.dump(all_metrics, f)
 
+
     def save(self, config_file):
         # save model
-        merged_model = self.model.merge_and_unload()
-        merged_model.save_pretrained(self.config.output_dir)
+        # merged_model = self.model.merge_and_unload()
+        # merged_model.save_pretrained(self.config.output_dir)
+        self.model.save_pretrained(self.config.output_dir)
         # self.model.base_model.save_pretrained(os.path.join(self.config.output_dir, "base_model"))
         if self.config.tokenizer is not None:
             self.config.tokenizer.save_pretrained(self.config.output_dir)

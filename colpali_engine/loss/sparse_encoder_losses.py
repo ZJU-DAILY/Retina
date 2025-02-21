@@ -33,14 +33,37 @@ class SparsePairwiseCELoss(torch.nn.Module):
     def __init__(self):
         super().__init__()
         self.ce_loss = CrossEntropyLoss()
-        self.flops_loss = FLOPS()
-        self.lambda_flops_query = 3e-4
-        self.lambda_flops_doc = 3e-4
     def forward(self, query_embeddings, doc_embeddings):
         """
         query_embeddings: (batch_size, dim)
         doc_embeddings: (batch_size, dim)
         """
+
+        scores = torch.einsum("bd,cd->bc", query_embeddings, doc_embeddings)
+
+        pos_scores = scores.diagonal()
+        neg_scores = scores - torch.eye(scores.shape[0], device=scores.device) * 1e6
+        neg_scores = neg_scores.max(dim=1)[0]
+
+        loss = F.softplus(neg_scores - pos_scores).mean()
+
+        return loss
+
+class SparsePairwiseFlopsLoss(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.ce_loss = CrossEntropyLoss()
+        self.flops_loss = FLOPS()
+        self.lambda_flops_query = 6e-5
+        self.lambda_flops_doc = 2e-5
+    def forward(self, query_embeddings, doc_embeddings):
+        """
+        query_embeddings: (batch_size, dim)
+        doc_embeddings: (batch_size, dim)
+        """
+        
+        print("query_embeddings", query_embeddings.shape, torch.sum(torch.sum(query_embeddings > 0, dim=0).float()) / query_embeddings.size(0))
+        print("doc_embeddings", doc_embeddings.shape, torch.sum(torch.sum(doc_embeddings > 0, dim=0).float()) / doc_embeddings.size(0))
 
         scores = torch.einsum("bd,cd->bc", query_embeddings, doc_embeddings)
 
@@ -68,7 +91,7 @@ class SparsePairwiseNegativeCELoss(torch.nn.Module):
         doc_embeddings: (batch_size, dim)
         neg_doc_embeddings: (batch_size, dim)
         """
-
+        
         pos_scores = torch.einsum("bd,cd->bc", query_embeddings, doc_embeddings).diagonal()
         neg_scores = torch.einsum("bd,cd->bc", query_embeddings, neg_doc_embeddings).diagonal()
 

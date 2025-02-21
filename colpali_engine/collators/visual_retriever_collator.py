@@ -78,8 +78,9 @@ class VisualRetrieverCollator:
             if "query" in example and example["query"] is not None:
                 querys.append(add_image_token(example["query"], prompt))
                 
-            if "neg_cand_list" in example and example["neg_cand_list"] is not None:
-                neg_cand.append(add_image_token(example["neg_cand_list"], prompt))
+            if "neg_cand_list" in example and example["neg_cand_list"] is not None and len(example["neg_cand_list"]) > 0:
+                for neg in example["neg_cand_list"]:
+                    neg_cand.append(add_image_token(neg, prompt))
                
             if self.use_example:
                 in_batch_example.append(get_in_batch_example(example))

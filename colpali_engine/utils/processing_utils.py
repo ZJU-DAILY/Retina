@@ -178,8 +178,10 @@ class BaseVisualRetrieverProcessor(ABC):
         )
         for doc_id, p in tqdm(enumerate(ps), desc="Building Inverted Index", total=ps_len):
             p = p.to(device)
-            indices = p.nonzero(as_tuple=True)[0].tolist()
-            values = p[indices].tolist()
+            # indices = p.nonzero(as_tuple=True)[0].tolist()
+            # values = p[indices].tolist()
+            indices = p._indices().tolist()[0]  # 获取非零元素的索引
+            values = p._values().tolist()  # 获取非零元素的值
             for term, value in zip(indices, values):
                 if value > 0:
                     term = int(term)
@@ -202,8 +204,10 @@ class BaseVisualRetrieverProcessor(ABC):
             batch_qs_terms = []
             batch_qs_values = []
             for q in batch_qs:
-                indices = q.nonzero(as_tuple=True)[0].tolist()
-                values = q[indices].tolist()
+                # indices = q.nonzero(as_tuple=True)[0].tolist()
+                # values = q[indices].tolist()
+                indices = q._indices().tolist()[0]  # 获取非零元素的索引
+                values = q._values().tolist()  # 获取非零元素的值
                 batch_qs_terms.append(indices)
                 batch_qs_values.append(values)
 

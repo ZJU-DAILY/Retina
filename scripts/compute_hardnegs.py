@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from colpali_engine.models import BiQwen2, BiQwen2Processor
-from colpali_engine.utils.dataset_transformation import load_train_set
+from colpali_engine.dataset.dataset_transformation import load_train_set
 
 train_set = load_train_set()
 

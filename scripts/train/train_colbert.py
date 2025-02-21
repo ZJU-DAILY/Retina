@@ -5,6 +5,7 @@ import configue
 import random
 import numpy as np
 import torch
+import argparse
 import typer
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 if project_root not in sys.path:
@@ -12,7 +13,7 @@ if project_root not in sys.path:
 from colpali_engine.trainer.colmodel_training import ColModelTraining, ColModelTrainingConfig
 from colpali_engine.utils.gpu_stats import print_gpu_utilization
 
-def set_random_seed(seed: int = 42) -> None:
+def set_random_seed(seed: int = 42) -> None: 
     """
     Fix random seeds for reproducibility.
     """
@@ -40,14 +41,18 @@ def main(config_file: Path) -> None:
         print("Running evaluation")
         app.eval()
     print("Done!")
+# def parse_args():
+#     parser = argparse.ArgumentParser(description="Multimodel training")
+#     parser.add_argument("--config", type=str, required=True, help="yaml config file path")
+#     return parser.parse_args()
 
 if __name__ == "__main__":
+    # args = parse_args()
     # typer.run(main)
-    # config_file = './scripts/configs/qwen2/train_biqwen2_hardneg_model.yaml'
-    # config_file = './scripts/configs/qwen2/train_icrr_colqwen2_model.yaml'
-    config_file = './scripts/configs/qwen2/train_beir_sparse_qwen2_model.yaml'
-    # config_file = './scripts/configs/qwen2/train_icrr_colqwen2_example_model.yaml'
-    # config_file = './scripts/configs/qwen2/train_icrr_biqwen2_model.yaml'
-    # config_file = '/data1/zhh/baselines/mm/icrr/scripts/configs/qwen2/train_icrr_biqwen2_model.yaml'
+    
+    # # config_file = './scripts/configs/qwen2/train_biqwen2_hardneg_model.yaml'
+    # # config_file = './scripts/configs/qwen2/train_icrr_colqwen2_model.yaml'
+    config_file = './scripts/configs/qwen2/train_triple_sparse_qwen2_model.yaml'
+    
     main(config_file)
     

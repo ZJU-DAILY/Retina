@@ -7,7 +7,11 @@
 /logs/
 /models
 /dataset/
+/DocLayout-YOLO/
+/VisRAG/
 /model/
+/wandb/
+/database/
 /data2/zhh_data/models
 /UniIR/
 /*.sh
