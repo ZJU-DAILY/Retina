@@ -5,7 +5,7 @@ import torch
 from matplotlib import pyplot as plt
 from PIL import Image
 
-from colpali_engine.interpretability.similarity_maps import plot_all_similarity_maps, plot_similarity_map
+from LLM4IR.interpretability.similarity_maps import plot_all_similarity_maps, plot_similarity_map
 
 
 @pytest.fixture

@@ -4,8 +4,8 @@ import pytest
 import torch
 from PIL import Image
 
-from colpali_engine.models import ColQwen2, ColQwen2Processor
-from colpali_engine.utils.torch_utils import get_torch_device
+from LLM4IR.models import ColQwen2, ColQwen2Processor
+from LLM4IR.utils.torch_utils import get_torch_device
 
 
 @pytest.fixture(scope="module")

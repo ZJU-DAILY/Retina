@@ -4,7 +4,7 @@ import pytest
 import torch
 from PIL import Image
 
-from colpali_engine.models import ColQwen2Processor
+from LLM4IR.models import ColQwen2Processor
 
 
 @pytest.fixture(scope="module")

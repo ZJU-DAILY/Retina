@@ -3,8 +3,8 @@ from typing import Generator, cast
 import pytest
 from PIL import Image
 
-from colpali_engine.collators.visual_retriever_collator import VisualRetrieverCollator
-from colpali_engine.models.paligemma.colpali.processing_colpali import ColPaliProcessor
+from LLM4IR.collators.visual_retriever_collator import VisualRetrieverCollator
+from LLM4IR.models.paligemma.colpali.processing_colpali import ColPaliProcessor
 
 
 class TestColPaliCollator:

@@ -1,8 +1,8 @@
 import pytest
 import torch
 
-from colpali_engine.interpretability.similarity_map_utils import get_similarity_maps_from_embeddings
-from colpali_engine.interpretability.similarity_maps import normalize_similarity_map
+from LLM4IR.interpretability.similarity_map_utils import get_similarity_maps_from_embeddings
+from LLM4IR.interpretability.similarity_maps import normalize_similarity_map
 
 
 class TestNormalizeSimilarityMap:

@@ -6,10 +6,10 @@ from datasets import Dataset, load_dataset
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from colpali_engine.models import ColPali
-from colpali_engine.models.paligemma.colpali.processing_colpali import ColPaliProcessor
-from colpali_engine.utils.processing_utils import BaseVisualRetrieverProcessor
-from colpali_engine.utils.torch_utils import ListDataset, get_torch_device
+from LLM4IR.models import ColPali
+from LLM4IR.models.paligemma.colpali.processing_colpali import ColPaliProcessor
+from LLM4IR.utils.processing_utils import BaseVisualRetrieverProcessor
+from LLM4IR.utils.torch_utils import ListDataset, get_torch_device
 
 
 def main():

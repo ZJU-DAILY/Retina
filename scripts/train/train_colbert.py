@@ -10,8 +10,8 @@ import typer
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 if project_root not in sys.path:
     sys.path.append(project_root)
-from colpali_engine.trainer.colmodel_training import ColModelTraining, ColModelTrainingConfig
-from colpali_engine.utils.gpu_stats import print_gpu_utilization
+from LLM4IR.trainer.colmodel_training import ColModelTraining, ColModelTrainingConfig
+from LLM4IR.utils.gpu_stats import print_gpu_utilization
 
 def set_random_seed(seed: int = 42) -> None: 
     """

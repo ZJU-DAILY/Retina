@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 import torch
 
-from colpali_engine.utils.processing_utils import BaseVisualRetrieverProcessor
+from LLM4IR.utils.processing_utils import BaseVisualRetrieverProcessor
 
 
 @pytest.fixture

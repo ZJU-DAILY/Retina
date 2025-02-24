@@ -6,8 +6,8 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from colpali_engine.models import BiQwen2, BiQwen2Processor
-from colpali_engine.dataset.dataset_transformation import load_train_set
+from LLM4IR.models import BiQwen2, BiQwen2Processor
+from LLM4IR.dataset.dataset_transformation import load_train_set
 
 train_set = load_train_set()
 
