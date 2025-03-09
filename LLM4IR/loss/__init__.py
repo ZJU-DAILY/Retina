@@ -13,3 +13,6 @@ from .sparse_encoder_losses import (
     SparsePairwiseCELoss,
     SparsePairwiseNegativeCELoss,
 )
+from .ce_reranker_losses import (
+    CERerankerLoss
+)

@@ -1,2 +1,3 @@
 from .corpus_query_collator import CorpusQueryCollator
 from .visual_retriever_collator import VisualRetrieverCollator
+from .visual_reranker_collator import VisualRerankerCollator

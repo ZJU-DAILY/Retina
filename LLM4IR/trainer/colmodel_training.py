@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from typing import Callable, Dict, Optional, Tuple
 import copy
 import torch
+from transformers import Trainer
+from LLM4IR.trainer.reranker_trainer import RerankerTrainer
 from datasets import concatenate_datasets, Dataset
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from torch.utils.data import DataLoader, Subset
@@ -17,11 +19,11 @@ from transformers import (
     TrainingArguments,
 )
 
-from LLM4IR.collators import CorpusQueryCollator, VisualRetrieverCollator
+from LLM4IR.collators import CorpusQueryCollator, VisualRetrieverCollator, VisualRerankerCollator
 from LLM4IR.loss.late_interaction_losses import (
     ColbertLoss,
 )
-from LLM4IR.trainer.contrastive_trainer import ContrastiveTrainer
+# from LLM4IR.trainer.contrastive_trainer import ContrastiveTrainer
 from LLM4IR.trainer.eval_utils import CustomRetrievalEvaluator, score_processing
 from LLM4IR.utils.gpu_stats import print_gpu_utilization, print_summary
 from LLM4IR.utils.processing_utils import BaseVisualRetrieverProcessor
@@ -30,10 +32,13 @@ from LLM4IR.utils.processing_utils import BaseVisualRetrieverProcessor
 @dataclass
 class ColModelTrainingConfig:
     model: PreTrainedModel
+    trainer: Trainer = None
+    collator: VisualRetrieverCollator = None
     tr_args: TrainingArguments = None
     output_dir: str = None
     max_length: int = 256
     use_example: bool = False
+    neg_num: int = 2
     run_eval: bool = True
     run_train: bool = True
     peft_config: Optional[LoraConfig] = None
@@ -96,7 +101,7 @@ class ColModelTraining:
 
         self.dataset =self.config.dataset_loading_func()
 
-        if isinstance(self.dataset, Tuple):
+        if self.config.collator == CorpusQueryCollator:
             corpus_format = self.dataset[2]
             neg_dataset = self.dataset[1]
             self.dataset = self.dataset[0]
@@ -106,6 +111,12 @@ class ColModelTraining:
                 image_dataset=neg_dataset,
                 mined_negatives=True,
                 corpus_format=corpus_format,
+            )
+        elif self.config.collator == VisualRerankerCollator:
+            self.collator = VisualRerankerCollator(
+                processor=self.config.processor,
+                max_length=self.config.max_length,
+                neg_num = self.config.neg_num,
             )
         else:
             self.collator = VisualRetrieverCollator(
@@ -121,16 +132,25 @@ class ColModelTraining:
             print("Training with hard negatives")
         else:
             print("Training with in-batch negatives")
-
-        trainer = ContrastiveTrainer(
-            model=self.model,
-            train_dataset=self.dataset["train"],
-            eval_dataset=self.dataset["eval"],
-            args=self.config.tr_args,
-            data_collator=self.collator,
-            loss_func=self.config.loss_func,
-            is_vision_model=self.config.processor is not None,
-        )
+        if self.config.trainer == RerankerTrainer:
+            trainer = RerankerTrainer(
+                model=self.model,
+                train_dataset=self.dataset["train"],
+                eval_dataset=self.dataset["eval"],
+                args=self.config.tr_args,
+                loss_func=self.config.loss_func,
+                data_collator=self.collator
+            )
+        else:
+            trainer = self.config.trainer(
+                model=self.model,
+                train_dataset=self.dataset["train"],
+                eval_dataset=self.dataset["eval"],
+                args=self.config.tr_args,
+                data_collator=self.collator,
+                loss_func=self.config.loss_func,
+                is_vision_model=self.config.processor is not None,
+            )
 
         trainer.args.remove_unused_columns = False
 
@@ -145,11 +165,6 @@ class ColModelTraining:
             self.model = self.model.to(device)
             print("Model is not on GPU. Moving to:", device)
         self.model.eval()
-        
-        # debug
-        # test_dataset = Subset(test_dataset, range(2000))
-        # candidatepool_dataset = Subset(candidatepool_dataset, range(2000))
-        # debug
         
         dataloader_with_query = DataLoader(
             test_dataset,
@@ -254,7 +269,7 @@ class ColModelTraining:
                 metrics = self.eval_dataset(test_name, test_ds, cand_ds, qrels)
                 all_metrics[test_name] = metrics
                 print(f"\nMetrics for {test_name}: {metrics}")
-
+                
                 # checkpoint dumps
                 result_file = f"{self.config.output_dir}/result/{test_name}_use_example_{self.config.use_example}.json"
                 os.makedirs(os.path.dirname(result_file), exist_ok=True)

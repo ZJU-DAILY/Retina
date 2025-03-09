@@ -11,12 +11,13 @@
 /VisRAG/
 /model/
 /wandb/
+/test_trash/
 /database/
 /data2/zhh_data/models
 /UniIR/
 /*.sh
 /*.out
-/llava-token-compression
+/llava-token-compression/
 /ColBERT
 # Byte-compiled / optimized / DLL files
 __pycache__/
