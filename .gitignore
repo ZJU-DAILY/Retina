@@ -41,8 +41,10 @@ finetune_qwen.py
 
 # ✅ 保留 scripts/configs/qwen2 目录
 
-!scripts/configs/tr_args/
-!scripts/configs/tr_args/**
+!scripts/configs/tr_args/*
+!scripts/configs/tr_args/train_bi_retriever_model.yaml
+!scripts/configs/tr_args/train_sparse_retriever_model.yaml
+!scripts/configs/tr_args/train_col_retriever_model.yaml
 
 /scripts/configs/data/*
 # ……但保留你需要的 yaml 文件
