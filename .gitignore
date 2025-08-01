@@ -44,9 +44,9 @@ finetune_qwen.py
 !scripts/configs/tr_args/**
 
 /scripts/configs/data/*
+# ……但保留你需要的 yaml 文件
 !/scripts/configs/data/beir_debug_data.yaml
 
-*.yaml
 .DS_Store
 /.vscode/
 /data/

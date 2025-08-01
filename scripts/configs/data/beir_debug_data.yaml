@@ -1,0 +1,24 @@
+VisRAG-Ret-Test-ChartQA:
+  (): LLM4IR.dataset.dataset_transformation.BeirTestSetFactory
+  data_dir: 'VisualIR/VisRAG-Ret-Test-ChartQA'
+
+VisRAG-Ret-Test-ArxivQA:
+  (): LLM4IR.dataset.dataset_transformation.BeirTestSetFactory
+  data_dir: 'VisualIR/VisRAG-Ret-Test-ArxivQA'
+
+VisRAG-Ret-Test-InfoVQA:
+  (): LLM4IR.dataset.dataset_transformation.BeirTestSetFactory
+  data_dir: 'VisualIR/VisRAG-Ret-Test-InfoVQA'
+
+VisRAG-Ret-Test-MP-DocVQA:
+  (): LLM4IR.dataset.dataset_transformation.BeirTestSetFactory
+  data_dir: 'VisualIR/VisRAG-Ret-Test-MP-DocVQA'
+
+VisRAG-Ret-Test-PlotQA:
+  (): LLM4IR.dataset.dataset_transformation.BeirTestSetFactory
+  data_dir: 'VisualIR/VisRAG-Ret-Test-PlotQA'
+
+VisRAG-Ret-Test-SlideVQA:
+  (): LLM4IR.dataset.dataset_transformation.BeirTestSetFactory
+  data_dir: 'VisualIR/VisRAG-Ret-Test-SlideVQA'
+
