@@ -1,4 +1,39 @@
 # Custom
+
+/AutoDidact/
+/ColBERT/
+/DocLayout-YOLO/
+/infinity/
+/llava-token-compression/
+/models/
+/recall_plot/
+/scripts/
+/tests/
+/UniIR/
+/VisRAG/
+/wandb/
+/ε-MRAG/
+
+# 忽略所有根目录下文件
+CHANELOG.md
+LICENSE
+finetune_qwen.py
+merge_vectors.py
+save_result.py
+sync.sh
+test_infinity.py
+test_load_time.py
+test_split.py
+test_tensor_storage.py
+test.single.py
+
+# ✅ 保留目录：LLM4IR 及其所有子目录
+!LLM4IR/
+!LLM4IR/**
+
+# ✅ 保留 scripts/configs/qwen2 目录
+!scripts/configs/qwen2/
+!scripts/configs/qwen2/**
 !*/configs/data/
 *.yaml
 .DS_Store
