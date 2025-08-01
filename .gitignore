@@ -8,9 +8,9 @@
 /models/
 /recall_plot/
 /scripts/demo/
-scripts/infer/
-scripts/test_trash/
-scripts/qwen2/
+/scripts/infer/
+/scripts/test_trash/
+/scripts/qwen2/
 
 /tests/
 /UniIR/
@@ -39,6 +39,7 @@ finetune_qwen.py
 !LLM4IR/**
 
 # ✅ 保留 scripts/configs/qwen2 目录
+!scripts/configs/tr_args/
 !scripts/configs/tr_args/**
 !*/configs/data/
 *.yaml
