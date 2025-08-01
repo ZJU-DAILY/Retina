@@ -60,5 +60,6 @@ pip install -r requirements.txt
 
 ```bash
 bash scripts/train/train_colbert.sh
+```
 
-###updateing.......
+### updateing.......
