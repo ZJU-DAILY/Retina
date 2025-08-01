@@ -11,7 +11,6 @@
 /scripts/infer/
 /scripts/test_trash/
 /scripts/qwen2/
-/scripts/configs/data/
 
 /tests/
 /UniIR/
@@ -43,8 +42,9 @@ finetune_qwen.py
 
 !scripts/configs/tr_args/
 !scripts/configs/tr_args/**
+
+/scripts/configs/data/*
 !/scripts/configs/data/beir_debug_data.yaml
-!/scripts/configs/tr_args/
 
 *.yaml
 .DS_Store
