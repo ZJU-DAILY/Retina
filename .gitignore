@@ -11,6 +11,7 @@
 /scripts/infer/
 /scripts/test_trash/
 /scripts/qwen2/
+/scripts/configs/data/
 
 /tests/
 /UniIR/
@@ -39,9 +40,12 @@ finetune_qwen.py
 !LLM4IR/**
 
 # ✅ 保留 scripts/configs/qwen2 目录
+
 !scripts/configs/tr_args/
 !scripts/configs/tr_args/**
-!*/configs/data/
+!/scripts/configs/data/beir_debug_data.yaml
+!/scripts/configs/tr_args/
+
 *.yaml
 .DS_Store
 /.vscode/
