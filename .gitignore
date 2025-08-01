@@ -33,8 +33,7 @@ test.single.py
 !LLM4IR/**
 
 # ✅ 保留 scripts/configs/qwen2 目录
-!scripts/configs/qwen2/
-!scripts/configs/qwen2/**
+!scripts/configs/tr_args/**
 !*/configs/data/
 *.yaml
 .DS_Store
