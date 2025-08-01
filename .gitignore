@@ -7,7 +7,11 @@
 /llava-token-compression/
 /models/
 /recall_plot/
-/scripts/
+/scripts/demo/
+scripts/infer/
+scripts/test_trash/
+scripts/qwen2/
+
 /tests/
 /UniIR/
 /VisRAG/
@@ -27,6 +31,8 @@ test_load_time.py
 test_split.py
 test_tensor_storage.py
 test.single.py
+test_infnity.py
+finetune_qwen.py
 
 # ✅ 保留目录：LLM4IR 及其所有子目录
 !LLM4IR/
