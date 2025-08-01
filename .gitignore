@@ -33,6 +33,7 @@ test_tensor_storage.py
 test.single.py
 test_infnity.py
 finetune_qwen.py
+/scripts/compute_hardnegs.py
 
 # ✅ 保留目录：LLM4IR 及其所有子目录
 !LLM4IR/
