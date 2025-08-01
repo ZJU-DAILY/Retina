@@ -10,7 +10,7 @@
 /scripts/demo/
 /scripts/infer/
 /scripts/test_trash/
-/scripts/qwen2/
+/scripts/configs/qwen2/
 
 /tests/
 /UniIR/
