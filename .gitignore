@@ -13,6 +13,7 @@
 /VisRAG/
 /wandb/
 /ε-MRAG/
+/tests/
 
 # 忽略所有根目录下文件
 CHANELOG.md
